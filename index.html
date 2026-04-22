@@ -66,11 +66,11 @@ function controller() {
         send(msg) {
             if (!this.characteristic) return;
             const encoder = new TextEncoder();
-            this.characteristic.writeValue(encoder.encode(msg));
+            this.characteristic.writeValue(encoder.encode(msg + "\n"));
         },
 
         handleKeyDown(key) {
-            if (this.keyState[key]) return; // already pressed
+            if (this.keyState[key]) return;
             this.keyState[key] = true;
             this.send(key.toUpperCase() + "_DOWN");
         },
@@ -79,21 +79,25 @@ function controller() {
             if (!this.keyState[key]) return;
             this.keyState[key] = false;
             this.send(key.toUpperCase() + "_UP");
+        },
+
+        init() {
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w','a','s','d'].includes(key)) {
+                    this.handleKeyDown(key);
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w','a','s','d'].includes(key)) {
+                    this.handleKeyUp(key);
+                }
+            });
         }
     }
 }
-
-const app = controller();
-
-document.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    if (['w','a','s','d'].includes(key)) app.handleKeyDown(key);
-});
-
-document.addEventListener('keyup', (e) => {
-    const key = e.key.toLowerCase();
-    if (['w','a','s','d'].includes(key)) app.handleKeyUp(key);
-});
 </script>
 
 </body>
