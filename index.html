@@ -1,48 +1,100 @@
 <!-- This code was written with the help of ChatGPT -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ESP32 WASD Controller</title>
+    <meta charset="UTF-8">
+    <title>ESP32 Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
-    <button id="connectBtn">Connect to ESP32</button>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
 
-    <script>
-        let characteristic;
+<div x-data="controller()" class="text-center space-y-6">
+    <h1 class="text-3xl font-bold">ESP32 WASD Controller</h1>
 
-        const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Change if needed
-        const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb'; // Change if needed
+    <button 
+        @click="connect"
+        class="px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 transition"
+    >
+        Connect
+    </button>
 
-        document.getElementById('connectBtn').addEventListener('click', async () => {
+    <p class="text-lg">
+        Status: 
+        <span :class="connected ? 'text-green-400' : 'text-red-400'">
+            <span x-text="connected ? 'Connected' : 'Disconnected'"></span>
+        </span>
+    </p>
+
+    <div class="grid grid-cols-3 gap-4 w-40 mx-auto text-xl font-bold">
+        <div></div>
+        <div :class="keyState.w ? 'bg-green-500' : 'bg-gray-700'" class="p-4 rounded">W</div>
+        <div></div>
+
+        <div :class="keyState.a ? 'bg-green-500' : 'bg-gray-700'" class="p-4 rounded">A</div>
+        <div :class="keyState.s ? 'bg-green-500' : 'bg-gray-700'" class="p-4 rounded">S</div>
+        <div :class="keyState.d ? 'bg-green-500' : 'bg-gray-700'" class="p-4 rounded">D</div>
+    </div>
+</div>
+
+<script>
+function controller() {
+    return {
+        connected: false,
+        characteristic: null,
+        keyState: { w: false, a: false, s: false, d: false },
+
+        SERVICE_UUID: '0000ffe0-0000-1000-8000-00805f9b34fb',
+        CHARACTERISTIC_UUID: '0000ffe1-0000-1000-8000-00805f9b34fb',
+
+        async connect() {
             try {
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [SERVICE_UUID] }]
+                    filters: [{ services: [this.SERVICE_UUID] }]
                 });
 
                 const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+                const service = await server.getPrimaryService(this.SERVICE_UUID);
+                this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
 
-                console.log("Connected to ESP32");
-            } catch (error) {
-                console.error(error);
+                this.connected = true;
+            } catch (e) {
+                console.error(e);
             }
-        });
+        },
 
-        function sendKey(key) {
-            if (!characteristic) return;
-
+        send(msg) {
+            if (!this.characteristic) return;
             const encoder = new TextEncoder();
-            characteristic.writeValue(encoder.encode(key));
+            this.characteristic.writeValue(encoder.encode(msg));
+        },
+
+        handleKeyDown(key) {
+            if (this.keyState[key]) return; // already pressed
+            this.keyState[key] = true;
+            this.send(key.toUpperCase() + "_DOWN");
+        },
+
+        handleKeyUp(key) {
+            if (!this.keyState[key]) return;
+            this.keyState[key] = false;
+            this.send(key.toUpperCase() + "_UP");
         }
+    }
+}
 
-        document.addEventListener('keydown', (event) => {
-            const key = event.key.toLowerCase();
+const app = controller();
 
-            if (["w", "a", "s", "d"].includes(key)) {
-                sendKey(key.toUpperCase());
-            }
-        });
-    </script>
+document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (['w','a','s','d'].includes(key)) app.handleKeyDown(key);
+});
+
+document.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    if (['w','a','s','d'].includes(key)) app.handleKeyUp(key);
+});
+</script>
+
 </body>
 </html>
