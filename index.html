@@ -1,0 +1,48 @@
+<!-- This code was written with the help of ChatGPT -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 WASD Controller</title>
+</head>
+<body>
+    <button id="connectBtn">Connect to ESP32</button>
+
+    <script>
+        let characteristic;
+
+        const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Change if needed
+        const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb'; // Change if needed
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+                console.log("Connected to ESP32");
+            } catch (error) {
+                console.error(error);
+            }
+        });
+
+        function sendKey(key) {
+            if (!characteristic) return;
+
+            const encoder = new TextEncoder();
+            characteristic.writeValue(encoder.encode(key));
+        }
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+
+            if (["w", "a", "s", "d"].includes(key)) {
+                sendKey(key.toUpperCase());
+            }
+        });
+    </script>
+</body>
+</html>
