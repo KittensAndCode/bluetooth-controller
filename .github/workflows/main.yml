@@ -1,5 +1,7 @@
 name: Github Pages
 on: push
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   publish:
     runs-on: ubuntu-latest
